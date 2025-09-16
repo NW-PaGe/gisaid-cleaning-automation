@@ -1,0 +1,73 @@
+# Files created by the pipeline, which we want to keep out of git
+# (or at least out of _this_ git repo).
+data/
+builds/
+results/
+tables/
+auspice/
+auspice-who/
+auspice_renamed/
+build/
+logs/
+figures/
+targets/
+benchmarks/
+
+
+# Snakemake state dir
+/.snakemake
+
+# Local config overrides
+/config_local.yaml
+
+# For Python #
+##############
+*.pyc
+.tox/
+.cache/
+
+# Compiled source #
+###################
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+*~
+
+# nohup output
+nohup.out
+
+# cluster logs
+slurm-*
+
+# Jupyter/Altair droppings
+.ipynb_checkpoints
+geckodriver.log
+
+# R files
+*.Rproj
+.Rhistory
+.RData
+
+# images
+*.png
+.Rproj.user
+
+# custom scripts
+00_*
+02_*
+03_*
+04_*
