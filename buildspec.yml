@@ -1,24 +1,7 @@
 version: 0.2
 phases:
-  install:
-    runtime-versions:
-      python: 3.9
-    commands:
-      - echo "Installing system dependencies..."
-      - apt-get update
-      - apt-get install -y r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev
-
-      - echo "Installing CRAN R packages..."
-      - R -e "install.packages(c('tidyverse', 'writexl', 'dplyr', 'purrr', 'furrr', 'readr', 'ggplot2', 'openxlsx', 'devtools'), repos='https://cran.r-project.org/', dependencies=TRUE)"
-
-      - echo "Installing Bioconductor packages..."
-      - R -e "if (!require('BiocManager', quietly = TRUE)) install.packages('BiocManager', repos='https://cran.r-project.org/'); BiocManager::install('Biostrings')"
-
-      - echo "Installing Snakemake..."
-      - pip install snakemake-minimal
-
   build:
     commands:
-      - echo "Starting data cleaning automation..."
+      - echo "Using pre-built container with R packages and awscli already installed"
       - chmod +x ./main.sh
       - ./main.sh
