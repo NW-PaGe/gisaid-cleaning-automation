@@ -11,8 +11,11 @@ process_metadata_files <- function(input_directories, columns_to_keep) {
   
   # Process files in each metadata directory
   process_xls_file <- function(file_path, columns_to_keep) {
-    data <- readxl::read_excel(file_path) %>%
-      dplyr::select(dplyr::all_of(columns_to_keep))
+    data <- readxl::read_excel(file_path)
+    # Only keep columns that exist in the data
+    existing_columns <- intersect(columns_to_keep, names(data))
+    data <- data %>%
+      dplyr::select(dplyr::all_of(existing_columns))
     return(data)
   }
   
@@ -275,11 +278,8 @@ correct_strain_format <- function(df) {
     # Replace apostrophes with underscores
     isolate_name <- base::gsub("'", "_", isolate_name)
     
-    # Replace umlauts
-    isolate_name <- base::gsub("ü", "u", isolate_name)
-    isolate_name <- base::gsub("ö", "o", isolate_name)
-    isolate_name <- base::gsub("ä", "a", isolate_name)
-    isolate_name <- base::gsub("ß", "ss", isolate_name)
+    # Remove diacritical marks using base R
+    isolate_name <- iconv(isolate_name, from = "UTF-8", to = "ASCII//TRANSLIT")
     
     return(isolate_name)
   }
