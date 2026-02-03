@@ -2,7 +2,7 @@
 
 # Load the necessary library
 library(parallel)
-source("Rscripts/functions_for_cleaning.R")  # Ensure functions are sourced in the main environment
+source("Rscripts/functions_for_cleaning.R")  # Source once in main environment
 
 # Define directories and columns to keep
 input_directories <- list(
@@ -40,8 +40,8 @@ counts_log <- data.frame(
 
 # Function to process each directory
 process_directory <- function(dir_name, counts_log) {
-  # Source the necessary functions on each worker node
-  source("Rscripts/functions_for_cleaning.R")  # Ensure functions are sourced for each worker
+  # REMOVED: source("Rscripts/functions_for_cleaning.R")  
+  # Functions are already available from parent environment
   
   lineage <- dir_name
   input_dir <- input_directories[[dir_name]]
@@ -73,30 +73,52 @@ process_directory <- function(dir_name, counts_log) {
 }
 
 # Set up the parallel cluster
-num_cores <- detectCores() - 1  # Use one less than the total number of cores to avoid overloading
+num_cores <- min(detectCores() - 1, 4)  # Use max 4 cores to avoid memory issues
 cl <- makeCluster(num_cores)
 
 # Export necessary variables and functions to the cluster
 clusterExport(cl, list("input_directories", "output_directories", "columns_to_keep", 
                        "process_metadata_files", "process_fasta_files", "filter_and_combine_data", 
-                       "format_and_dedup_data", "write_outputs", "log_counts", "counts_log", "process_directory"))
+                       "format_and_dedup_data", "write_outputs", "log_counts", "counts_log", 
+                       "process_directory", "valid_chars", "read_fasta", "is_valid_sequence",
+                       "parse_fasta_header", "determine_segment_type", "process_fasta_file",
+                       "filter_contemporaneous_seq", "correct_strain_format", 
+                       "format_passage_dataframe", "append_egg_suffix", "check_seq_length",
+                       "fix_location"))
 
-# Use clusterEvalQ to ensure libraries are loaded in each parallel worker and that functions are sourced
+# Load libraries in each worker
 clusterEvalQ(cl, {
   library(tidyverse)
   library(readxl)
   library(writexl)
   library(Biostrings)
-  
-  # Source the functions for each worker
-  source("Rscripts/functions_for_cleaning.R")
 })
 
-# Use parLapply to process the directories in parallel and get all lineage data
-results <- parLapply(cl, names(input_directories), function(dir_name) process_directory(dir_name, counts_log))
+# Use parLapply with error handling
+results <- tryCatch({
+  parLapply(cl, names(input_directories), function(dir_name) {
+    tryCatch({
+      process_directory(dir_name, counts_log)
+    }, error = function(e) {
+      message(sprintf("Error processing %s: %s", dir_name, conditionMessage(e)))
+      return(NULL)
+    })
+  })
+}, error = function(e) {
+  message(sprintf("Fatal error in parallel processing: %s", conditionMessage(e)))
+  stopCluster(cl)
+  stop(e)
+})
 
 # Stop the cluster after processing
 stopCluster(cl)
+
+# Remove NULL results (failed processing)
+results <- results[!sapply(results, is.null)]
+
+if (length(results) == 0) {
+  stop("All parallel processes failed. Check error messages above.")
+}
 
 # Extract the processed data frames and counts_log from the results
 all_lineage_data <- lapply(results, function(res) res[[1]])
@@ -112,3 +134,5 @@ write.csv(combined_df, output_file, row.names = FALSE)
 # Combine all counts_log entries and write the final counts log
 counts_log <- do.call(rbind, counts_log_list)
 write.csv(counts_log, paste0("data/cleaned/wa_summary_counts/", Sys.Date(), "_lineage_counts_summary.csv"), row.names = FALSE)
+
+message("Processing completed successfully!")
