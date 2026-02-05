@@ -12,6 +12,12 @@ logs/
 figures/
 targets/
 benchmarks/
+Rscripts/NCBI/ncbi/*
+Rscripts/NCBI/temp_processing/*
+Rscripts/NCBI/temp_ncbi_data_b/*
+Rscripts/NCBI/qc_analysis/*
+Rscripts/NCBI/final_report.txt
+Rscripts/NCBI/processing_summary.txt
 
 
 # Snakemake state dir

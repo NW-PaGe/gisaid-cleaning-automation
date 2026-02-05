@@ -1,25 +1,42 @@
-FROM rocker/tidyverse:latest
-
-# Install system dependencies needed for AWS CLI installation
+FROM docker.io/rocker/tidyverse:latest
+# --- system deps ---
 RUN apt-get update && apt-get install -y \
-    unzip \
     curl \
+    unzip \
+    python3 \
+    python3-pip \
+    jq \
+    seqtk \
+    parallel \
     && rm -rf /var/lib/apt/lists/*
 
-# Install AWS CLI v2 using the official method
+# --- AWS CLI v2 ---
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
     && unzip awscliv2.zip \
     && ./aws/install \
     && rm -rf awscliv2.zip aws/
 
-# Install additional R packages not in tidyverse
-RUN R -e "install.packages(c('writexl', 'furrr', 'openxlsx'), repos='https://cran.r-project.org/')"
+# --- NCBI datasets CLI (datasets + dataformat) ---
+# (NCBI publishes static binaries; pin versions if you want reproducibility)
+RUN curl -L "https://ftp.ncbi.nlm.nih.gov/pub/datasets/command-line/LATEST/linux-amd64/datasets" \
+      -o /usr/local/bin/datasets \
+    && curl -L "https://ftp.ncbi.nlm.nih.gov/pub/datasets/command-line/LATEST/linux-amd64/dataformat" \
+      -o /usr/local/bin/dataformat \
+    && chmod +x /usr/local/bin/datasets /usr/local/bin/dataformat
 
-# Install Bioconductor packages
-RUN R -e "if (!require('BiocManager', quietly = TRUE)) install.packages('BiocManager'); BiocManager::install('Biostrings')"
+# --- Nextclade CLI ---
+# Pin this version to whatever you’ve validated locally
+ARG NEXTCLADE_VERSION=3.10.2
+RUN curl -L "https://github.com/nextstrain/nextclade/releases/download/${NEXTCLADE_VERSION}/nextclade-x86_64-unknown-linux-gnu" \
+      -o /usr/local/bin/nextclade \
+    && chmod +x /usr/local/bin/nextclade
 
-# Verify AWS CLI installation
-RUN aws --version
+# --- R packages ---
+RUN R -e "install.packages(c('writexl','furrr','openxlsx'), repos='https://cran.r-project.org/')"
+RUN R -e "if (!require('BiocManager', quietly=TRUE)) install.packages('BiocManager'); BiocManager::install('Biostrings')"
+
+# --- sanity checks ---
+RUN aws --version && datasets --version && seqtk 2>/dev/null || true && nextclade --version
 
 WORKDIR /app
 CMD ["/bin/bash"]

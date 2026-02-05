@@ -4,4 +4,5 @@ phases:
     commands:
       - echo "Using pre-built container with R packages and awscli already installed"
       - chmod +x ./main.sh
+      - chmod +x Rscripts/NCBI/waphl_main_pipeline.sh
       - ./main.sh
