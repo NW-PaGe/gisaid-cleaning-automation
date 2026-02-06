@@ -50,6 +50,12 @@ REQUIRED_DIRS=(
     "merged/h5n1/metadata"
     "ncbi/h5n1/fasta"
     "ncbi/h5n1/metadata"
+    "ncbi/h1n1pdm/sequences"
+    "ncbi/h1n1pdm/metadata"
+    "ncbi/h3n2/sequences"
+    "ncbi/h3n2/metadata"
+    "ncbi/vic/sequences"
+    "ncbi/vic/metadata"
     "wa_summary_counts"
 )
 
@@ -89,6 +95,24 @@ else
     echo "Error: NCBI seasonal pipeline script '$NCBI_SEASONAL_PIPELINE' not found. Exiting."
     exit 1
 fi
+
+# -------------------------------------------------------------------
+# Copy NCBI seasonal results into data/cleaned/ncbi/ so they are
+# picked up by the harmonization script and the final S3 sync
+# -------------------------------------------------------------------
+echo ""
+echo "Copying NCBI seasonal results to data/cleaned/ncbi/..."
+for subtype in h1n1pdm h3n2 vic; do
+    src="Rscripts/NCBI/ncbi/${subtype}"
+    dest="${LOCAL_CLEANED_DIR}ncbi/${subtype}"
+    if [ -d "$src" ]; then
+        cp -r "$src"/. "$dest"/
+        echo "  Copied ${subtype}: $(find "$dest" -name '*.fasta' -o -name '*.csv' -o -name '*.tsv' | wc -l) files"
+    else
+        echo "  WARNING: $src not found, skipping"
+    fi
+done
+echo "NCBI seasonal results copied."
 
 # -------------------------------------------------------------------
 # NEW: Harmonize GISAID + NCBI outputs (run from repo root)

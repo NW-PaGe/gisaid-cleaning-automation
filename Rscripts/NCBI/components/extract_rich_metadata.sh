@@ -80,7 +80,7 @@ def extract_rich_metadata(json_file, output_file, sequences_file):
         'Accession', 'Organism_Name', 'GenBank_RefSeq', 'Assembly', 'SRA_Accession',
         'Submitters', 'Organization', 'Org_location', 'Release_Date', 'Isolate',
         'Species', 'Genus', 'Family', 'Molecule_type', 'Length', 'Nuc_Completeness',
-        'Genotype', 'Segment', 'Publications', 'Geo_Location', 'Country', 'USA',
+        'Genotype', 'Segment', 'Publications', 'Geo_Location', 'Country', 'USA', 'County',
         'Host', 'Tissue_Specimen_Source', 'Collection_Date', 'BioSample', 'BioProject',
         'GenBank_Title'
     ]

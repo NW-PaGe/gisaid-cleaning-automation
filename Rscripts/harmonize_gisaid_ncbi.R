@@ -141,16 +141,28 @@ transform_ncbi_to_gisaid_format <- function(ncbi_df, subtype) {
       )),
       Lineage = as.character(subtype),
       
-      # Location - NCBI has structured location, convert to GISAID format
+      # Location - parse Geo_Location for state and county info
+      # Geo_Location format: "USA: Washington,Pierce" or "USA: Washington"
+      # Extract county from Geo_Location (text after comma, if present)
+      .geo_county = str_match(Geo_Location, ",\\s*(.+)$")[,2],
+      
       Location = as.character(case_when(
-        !is.na(USA) & USA != "" ~ paste0("North America / United States / ", USA),
+        # Has state + county
+        !is.na(USA) & USA != "" & !is.na(.geo_county) ~ 
+          paste0("North America / United States / ", expand_us_state(USA), " / ", str_trim(.geo_county)),
+        # Has state only
+        !is.na(USA) & USA != "" ~ 
+          paste0("North America / United States / ", expand_us_state(USA)),
         Country == "USA" ~ "North America / United States",
         !is.na(Geo_Location) ~ Geo_Location,
         TRUE ~ NA_character_
       )),
       
-      # Host
-      Host = as.character(Host),
+      # Host - harmonize to GISAID convention (e.g., "Homo sapiens" -> "Human")
+      Host = as.character(case_when(
+        str_detect(Host, regex("homo sapiens", ignore_case = TRUE)) ~ "Human",
+        TRUE ~ Host
+      )),
       
       # Submitter information
       Isolate_Submitter = as.character(Submitters),
