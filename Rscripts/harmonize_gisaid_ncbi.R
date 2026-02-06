@@ -54,6 +54,23 @@ read_gisaid_metadata <- function(subtype_gisaid) {
   return(df)
 }
 
+expand_us_state <- function(x) {
+  x <- as.character(x)
+  x_trim <- stringr::str_trim(x)
+
+  # Only expand exact 2-letter abbreviations
+  x_up <- toupper(x_trim)
+  idx <- match(x_up, state.abb)
+
+  out <- x_trim
+  out[!is.na(idx)] <- state.name[idx[!is.na(idx)]]
+
+  # Handle DC explicitly (not in state.abb)
+  out[x_up %in% c("DC", "D.C.")] <- "District of Columbia"
+
+  out
+}
+
 # Function to transform NCBI metadata to GISAID format
 transform_ncbi_to_gisaid_format <- function(ncbi_df, subtype) {
   cat(sprintf("    Transforming %d NCBI segment records to GISAID format...\n", nrow(ncbi_df)))
@@ -66,6 +83,9 @@ transform_ncbi_to_gisaid_format <- function(ncbi_df, subtype) {
       Collection_Date = as.character(Collection_Date),
       Release_Date = as.character(Release_Date),
       
+      # Expand state abbreviations (WA -> Washington, etc.)
+      USA = expand_us_state(USA),
+
       # Create segment column names
       Segment_Column = case_when(
         Segment == "1" ~ "PB2 Segment_Id",
