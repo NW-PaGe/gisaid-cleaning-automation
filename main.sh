@@ -81,6 +81,35 @@ done
 echo "All R scripts executed successfully!"
 
 # -------------------------------------------------------------------
+# Run Nextclade on merged H5N1 HA sequences to get subclade assignments
+# -------------------------------------------------------------------
+H5N1_HA_FASTA="data/cleaned/merged/h5n1/fasta/raw_sequences_ha.fasta"
+NEXTCLADE_H5N1_OUT="data/cleaned/merged/h5n1/metadata/nextclade_h5n1_ha.tsv"
+RSCRIPT_SUBCLADE="Rscripts/append_nextclade_subclade.R"
+
+echo ""
+echo "Running Nextclade on merged H5N1 HA sequences..."
+if [ -f "$H5N1_HA_FASTA" ]; then
+    nextclade run \
+        --dataset-name "community/moncla-lab/iav-h5/ha/all-clades" \
+        --output-tsv "$NEXTCLADE_H5N1_OUT" \
+        "$H5N1_HA_FASTA"
+    echo "Nextclade H5N1 HA complete: $NEXTCLADE_H5N1_OUT"
+
+    # Append subclade assignments to merged metadata
+    echo "Appending subclade assignments to merged metadata..."
+    if [ -f "$RSCRIPT_SUBCLADE" ]; then
+        Rscript "$RSCRIPT_SUBCLADE"
+        echo "Completed: $RSCRIPT_SUBCLADE"
+    else
+        echo "Error: '$RSCRIPT_SUBCLADE' not found. Exiting."
+        exit 1
+    fi
+else
+    echo "WARNING: H5N1 HA FASTA not found at $H5N1_HA_FASTA, skipping Nextclade and subclade append."
+fi
+
+# -------------------------------------------------------------------
 # NEW: Run seasonal NCBI pipeline (bash) from Rscripts/NCBI
 # -------------------------------------------------------------------
 echo ""

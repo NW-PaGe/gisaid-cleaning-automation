@@ -25,9 +25,8 @@ RUN curl -L "https://ftp.ncbi.nlm.nih.gov/pub/datasets/command-line/LATEST/linux
     && chmod +x /usr/local/bin/datasets /usr/local/bin/dataformat
 
 # --- Nextclade CLI ---
-# Pin this version to whatever you’ve validated locally
-ARG NEXTCLADE_VERSION=3.10.2
-RUN curl -L "https://github.com/nextstrain/nextclade/releases/download/${NEXTCLADE_VERSION}/nextclade-x86_64-unknown-linux-gnu" \
+# Build with the recent version of Nextclade
+RUN curl -L "https://github.com/nextstrain/nextclade/releases/latest/download/nextclade-x86_64-unknown-linux-gnu" \
       -o /usr/local/bin/nextclade \
     && chmod +x /usr/local/bin/nextclade
 
