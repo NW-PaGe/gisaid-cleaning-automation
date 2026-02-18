@@ -434,16 +434,17 @@ process_subtype <- function(subtype_name, mapping) {
     cat(sprintf("    NCBI records only: %d\n", nrow(ncbi_transformed)))
   }
   
+   # Create output directory
+  output_dir <- file.path(OUTPUT_BASE, subtype_name)
+  dir.create(file.path(output_dir, "metadata"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(output_dir, "fasta"), recursive = TRUE, showWarnings = FALSE)
+  
   # DEDUPLICATE BY ISOLATE NAME
   deduplicated_metadata <- deduplicate_by_isolate_name(merged_metadata, subtype_name)
   
   # Get list of deduplicated isolate names for FASTA filtering
   deduplicated_names <- deduplicated_metadata$Isolate_Name
   
-  # Create output directory
-  output_dir <- file.path(OUTPUT_BASE, subtype_name)
-  dir.create(file.path(output_dir, "metadata"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(output_dir, "fasta"), recursive = TRUE, showWarnings = FALSE)
   
   # Write deduplicated metadata
   write_xlsx(deduplicated_metadata, file.path(output_dir, "metadata", "metadata.xlsx"))
