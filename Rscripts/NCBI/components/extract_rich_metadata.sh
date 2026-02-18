@@ -20,6 +20,27 @@ import sys
 import re
 from collections import defaultdict
 
+def normalize_influenza_a_isolate(name):
+    """
+    Normalize Influenza A isolate names only (B/ names are left untouched):
+    - Title-case the location field (second / delimited field)
+    - Strip subtype from trailing parentheses
+    e.g. A/WASHINGTON/WAPHL-408861/2025(H3)   -> A/Washington/WAPHL-408861/2025
+         A/WASHINGTON/WAPHL-954553/2025(H1N1) -> A/Washington/WAPHL-954553/2025
+    """
+    if not name.startswith('A/'):
+        return name  # Leave Influenza B (B/...) untouched
+
+    # Strip trailing subtype in parentheses e.g. (H3), (H3N2), (H1N1)
+    name = re.sub(r'\([A-Z0-9]+\)$', '', name)
+
+    # Title-case the location field only (index 1 after splitting on '/')
+    parts = name.split('/')
+    if len(parts) >= 2:
+        parts[1] = parts[1].title()
+
+    return '/'.join(parts)
+
 def extract_isolate_from_fasta_header(header: str):
     """
     Correctly extracts isolate from headers like:
@@ -163,6 +184,8 @@ def extract_rich_metadata(json_file, output_file, sequences_file):
                         isolate_name = organism_name.replace('Influenza A virus ', '').replace('Influenza B virus ', '')
                     
                     # Determine genotype from isolate name (basic extraction)
+                    # NOTE: genotype detection runs BEFORE normalization so subtype
+                    # info in parentheses e.g. (H3N2) is still present at this point
                     genotype = ''
                     if isolate_name:
                         if '(H3N2)' in isolate_name or 'H3N2' in isolate_name or '/h3n2' in isolate_name.lower():
@@ -173,7 +196,10 @@ def extract_rich_metadata(json_file, output_file, sequences_file):
                             genotype = 'H5N1'
                         elif 'Victoria' in isolate_name or 'Yamagata' in isolate_name:
                             genotype = 'Victoria' if 'Victoria' in isolate_name else 'Yamagata'
-                    
+
+                    # Normalize isolate name AFTER genotype detection
+                    isolate_name = normalize_influenza_a_isolate(isolate_name)
+
                     # Create the metadata record
                     record = {
                         'Accession': accession,

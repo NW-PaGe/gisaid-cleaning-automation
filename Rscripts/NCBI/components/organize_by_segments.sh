@@ -97,6 +97,27 @@ for segment_num in {1..8}; do
 import sys
 import re
 
+def normalize_influenza_a_isolate(name):
+    """
+    Normalize Influenza A isolate names only (B/ names are left untouched):
+    - Title-case the location field (second / delimited field)
+    - Strip subtype from trailing parentheses
+    e.g. A/WASHINGTON/WAPHL-408861/2025(H3)   -> A/Washington/WAPHL-408861/2025
+         A/WASHINGTON/WAPHL-954553/2025(H1N1) -> A/Washington/WAPHL-954553/2025
+    """
+    if not name.startswith('A/'):
+        return name  # Leave Influenza B (B/...) untouched
+
+    # Strip trailing subtype in parentheses e.g. (H3), (H3N2), (H1N1)
+    name = re.sub(r'\([A-Z0-9]+\)$', '', name)
+
+    # Title-case the location field only (index 1 after splitting on '/')
+    parts = name.split('/')
+    if len(parts) >= 2:
+        parts[1] = parts[1].title()
+
+    return '/'.join(parts)
+
 # Read accession-to-isolate mapping
 mapping = {}
 with open('/tmp/accession_to_isolate.tsv', 'r') as f:
@@ -116,19 +137,18 @@ with open('/tmp/${segment_name}_temp.fasta', 'r') as f:
 
             # Look up isolate name from mapping
             if accession in mapping:
-                isolate_name = mapping[accession]
+                isolate_name = normalize_influenza_a_isolate(mapping[accession])
                 print(f">{isolate_name}")
             else:
                 # Fallback: extract isolate from header directly
                 # Handles: (A/.../2025(H3)), (A/.../2025(H3N2)), (A/.../2025)
-
                 m = re.search(r'\(((?:A|B)/[^)]*\))\)', header)
                 if m:
-                    print(f">{m.group(1)}")
+                    print(f">{normalize_influenza_a_isolate(m.group(1))}")
                 else:
                     m = re.search(r'\(((?:A|B)/[^)]+)\)', header)
                     if m:
-                        print(f">{m.group(1)}")
+                        print(f">{normalize_influenza_a_isolate(m.group(1))}")
                     else:
                         # Last resort: use accession
                         print(f">{accession}")
