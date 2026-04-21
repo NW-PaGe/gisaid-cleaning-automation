@@ -5,6 +5,14 @@ library(readxl)
 library(writexl)
 library(Biostrings)
 
+normalize_id <- function(x) {
+  x <- gsub("\\s+", "", x)          # remove all whitespace
+  x <- gsub("//+", "/", x)          # collapse double slashes
+  x <- gsub("[>?]", "", x)          # remove junk chars
+  x <- iconv(x, from = "UTF-8", to = "ASCII//TRANSLIT")
+  return(x)
+}
+
 process_metadata_files <- function(input_directories, columns_to_keep) {
   # Append the 'metadata/' sublevel to each input directory
   metadata_directories <- purrr::map(input_directories, ~ file.path(.x, "metadata"))
@@ -272,14 +280,17 @@ correct_strain_format <- function(df) {
     # Change A. or A_ at the start to A/
     isolate_name <- base::gsub("^A[._]", "A/", isolate_name)
     
-    # Remove all spaces in the Isolate_Name
-    isolate_name <- base::gsub("\\s+", "", isolate_name)
-    
     # Replace apostrophes with underscores
     isolate_name <- base::gsub("'", "_", isolate_name)
     
     # Remove diacritical marks using base R
     isolate_name <- iconv(isolate_name, from = "UTF-8", to = "ASCII//TRANSLIT")
+
+    # Remove all spaces in the Isolate_Name
+    isolate_name <- base::gsub("\\s+", "", isolate_name)
+
+    # Final catch-all: strip any whitespace (including non-breaking spaces \u00a0)
+    isolate_name <- base::gsub("[[:space:]]", "", isolate_name)
     
     return(isolate_name)
   }
@@ -388,6 +399,7 @@ format_and_dedup_data <- function(df, input_directory){
 }
 
 write_outputs <- function(df_filtered, output_dir, columns_to_keep) {
+
   # Filter sequences for NA and HA segments
   NA_seqs <- df_filtered %>% filter(NA_segment == TRUE)
   HA_seqs <- df_filtered %>% filter(HA_segment == TRUE)
